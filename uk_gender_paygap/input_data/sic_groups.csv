@@ -1,0 +1,22 @@
+section,description,min,max,num
+A,"Agriculture, Forestry and Fishing",01,03,3
+B,Mining and Quarrying,05,09,5
+C,Manufacturing,10,33,24
+D,"Electricity, gas, steam and air conditioning supply",35,35,1
+E,"Water supply, sewerage, waste management and remediation activities",36,39,4
+F,Construction,41,43,3
+G,Wholesale and retail trade; repair of motor vehicles and motorcycles,45,47,3
+H,Transportation and storage,49,53,5
+I,Accommodation and food service activities,55,56,2
+J,Information and communication,58,63,6
+K,Financial and insurance activities,64,66,3
+L,Real estate activities,68,68,1
+M,"Professional, scientific and technical activities",69,75,7
+N,Administrative and support service activities,77,82,6
+O,Public administration and defence; compulsory social security,84,84,1
+P,Education,85,85,1
+Q,Human health and social work activities,86,88,3
+R,"Arts, entertainment and recreation",90,93,4
+S,Other service activities,94,96,3
+T,Activities of households as employers,97,98,2
+U,Activities of extraterritorial organisations and bodies,99,99,1

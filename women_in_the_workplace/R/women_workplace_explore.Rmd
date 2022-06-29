@@ -1,0 +1,145 @@
+---
+title: "Women in the Workplace"
+output: html_document
+date: '2022-06-29'
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(scales)
+library(tidytuesdayR)
+library(tidyverse)
+library(skimr)
+
+```
+
+```{r load_data}
+# Get data
+jobs_gender <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/jobs_gender.csv")
+earnings_female <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/earnings_female.csv")
+employed_gender <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/employed_gender.csv")
+
+skim(jobs_gender)
+jobs_gender %>%
+  select(-wage_percent_of_male) %>% 
+  filter(!complete.cases(.)) %>% 
+  View()
+```
+
+```{r jobs}
+summarise_jobs_gender <- function(data){
+  totals <- data %>% 
+    summarise(#this is a weighted average of earnings  - filter out the NAs in the divisor
+              total_earnings = sum(total_earnings * total_workers, na.rm = T) / 
+                sum(total_workers[!is.na(total_earnings)]),
+              total_earnings_male = sum(total_earnings_male * workers_male, na.rm = T) / 
+                sum(workers_male[!is.na(total_earnings_male)]),
+              total_earnings_female = sum(total_earnings_female * workers_female, na.rm = T) / 
+                sum(workers_female[!is.na(total_earnings_female)]),
+              total_workers = sum(total_workers),
+              workers_male = sum(workers_male),
+              workers_female = sum(workers_female)) %>% 
+    mutate(wage_percent_of_male = total_earnings_female / total_earnings_male)
+  return(totals)
+}
+
+# Create a plot
+by_year_major_category <- jobs_gender %>% 
+  group_by(year, major_category) %>% 
+  summarise_jobs_gender()
+
+
+# Plot of total earnings over years for major groupings
+by_year_major_category %>% 
+  mutate(major_category = fct_reorder(major_category, -total_earnings)) %>% 
+  ggplot(aes(x = year, y = total_earnings, color = major_category)) +
+  geom_line() +
+  expand_limits(y = 0)
+
+# Plot of wage disparity over years for major groupings
+by_year_major_category %>% 
+  mutate(major_category = fct_reorder(major_category, -wage_percent_of_male)) %>% 
+  ggplot(aes(x = year, y = wage_percent_of_male, color = major_category)) +
+  geom_line() 
+```
+
+```{r}
+by_minor_category_2016 <- jobs_gender %>% 
+  filter(year == 2016) %>% 
+  group_by(major_category, minor_category) %>%
+  summarise_jobs_gender() %>% 
+  ungroup()
+
+by_minor_category_2016 %>% 
+  mutate(minor_category = fct_reorder(minor_category, wage_percent_of_male)) %>% 
+  ggplot(aes(minor_category, wage_percent_of_male, fill = major_category)) + 
+  geom_col() +
+  coord_flip()
+```
+
+```{r}
+jobs_gender %>% 
+  filter(major_category == "Healthcare Practitioners and Technical") %>% 
+  arrange(desc(wage_percent_of_male)) %>% 
+  select(occupation, total_workers, workers_female, wage_percent_of_male) %>% 
+  View()
+```
+
+```{r}
+p1 <- jobs_gender %>% 
+  filter(major_category == "Healthcare Practitioners and Technical") %>% 
+  ggplot(aes(x = total_workers,
+             y = workers_female / total_workers,
+             color = total_earnings_female / total_earnings_male, 
+             label = occupation)) +
+  geom_point() +
+  scale_x_log10() +
+  scale_color_gradient2(low = "red", high = "blue",
+                        midpoint = 0.85, mid = "pink") +
+  labs(x = "Total # of workers", 
+       y = "% workforce female",
+       color = "female salaray as % of male") +
+  theme_light()
+
+p2 <- jobs_gender %>% 
+  filter(major_category == "Healthcare Practitioners and Technical") %>% 
+  ggplot(aes(x = workers_female / total_workers,
+             y = total_earnings_female / total_earnings_male, 
+             size = total_workers,
+             label = occupation)) +
+  geom_point() +
+  scale_size_continuous(range = c(1, 10)) + #increases the diff between size classes
+  labs(x = "% workforce female", 
+       y = "female salaray as % of male",
+       size = "total workers") +
+  theme_light()
+
+ggplotly(p2)
+```
+
+
+```{r}
+p3 <- jobs_gender %>% 
+  filter(year == 2016,
+         total_workers > 20000) %>% 
+  filter(major_category == "Computer, Engineering, and Science") %>% 
+  ggplot(aes(x = workers_female / total_workers,
+             y = total_earnings_female / total_earnings_male, 
+             size = total_workers,
+             color = minor_category,
+             label = occupation)) +
+  geom_point() +
+  scale_size_continuous(range = c(1, 10)) + #increases the diff between size classes
+  scale_x_continuous(labels = percent_format()) +
+  scale_y_continuous(labels = percent_format()) +
+  labs(x = "% workforce female", 
+       y = "female salaray as % of male",
+       size = "total workers") +
+  theme_light()
+ggplotly(p3)
+
+```
+

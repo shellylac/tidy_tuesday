@@ -1,7 +1,7 @@
 ---
 title: "Women in the Workplace"
 output: html_document
-date: '2022-06-29'
+date: `r Sys.Date()`
 editor_options: 
   chunk_output_type: console
 ---
@@ -13,23 +13,28 @@ library(scales)
 library(tidytuesdayR)
 library(tidyverse)
 library(skimr)
-
+library(here)
 ```
 
 ```{r load_data}
 # Get data
 jobs_gender <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/jobs_gender.csv")
-earnings_female <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/earnings_female.csv")
-employed_gender <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/employed_gender.csv")
+write_csv(jobs_gender, here( "women_in_the_workplace","input_data", "jobs_gender.csv"))
 
-skim(jobs_gender)
+earnings_female <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/earnings_female.csv")
+write_csv(earnings_female, here( "women_in_the_workplace","input_data", "earnings_female.csv"))
+
+employed_gender <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-05/employed_gender.csv")
+write_csv(employed_gender, here( "women_in_the_workplace","input_data", "employed_gender.csv"))
+
+#skim(jobs_gender)
 jobs_gender %>%
   select(-wage_percent_of_male) %>% 
   filter(!complete.cases(.)) %>% 
   View()
 ```
 
-```{r jobs}
+```{r summarise_function}
 summarise_jobs_gender <- function(data){
   totals <- data %>% 
     summarise(#this is a weighted average of earnings  - filter out the NAs in the divisor
@@ -45,7 +50,9 @@ summarise_jobs_gender <- function(data){
     mutate(wage_percent_of_male = total_earnings_female / total_earnings_male)
   return(totals)
 }
+```
 
+```{r plots_1}
 # Create a plot
 by_year_major_category <- jobs_gender %>% 
   group_by(year, major_category) %>% 
@@ -57,13 +64,15 @@ by_year_major_category %>%
   mutate(major_category = fct_reorder(major_category, -total_earnings)) %>% 
   ggplot(aes(x = year, y = total_earnings, color = major_category)) +
   geom_line() +
-  expand_limits(y = 0)
+  expand_limits(y = 0) +
+  theme_light()#
 
 # Plot of wage disparity over years for major groupings
 by_year_major_category %>% 
   mutate(major_category = fct_reorder(major_category, -wage_percent_of_male)) %>% 
   ggplot(aes(x = year, y = wage_percent_of_male, color = major_category)) +
-  geom_line() 
+  geom_line() +
+  theme_light()#
 ```
 
 ```{r}
@@ -117,6 +126,7 @@ p2 <- jobs_gender %>%
        size = "total workers") +
   theme_light()
 
+ggplotly(p1)
 ggplotly(p2)
 ```
 
@@ -135,9 +145,9 @@ p3 <- jobs_gender %>%
   scale_size_continuous(range = c(1, 10)) + #increases the diff between size classes
   scale_x_continuous(labels = percent_format()) +
   scale_y_continuous(labels = percent_format()) +
-  labs(x = "% workforce female", 
-       y = "female salaray as % of male",
-       size = "total workers") +
+  labs(x = "Female workforce proportion (%)", 
+       y = "Female salaray as % of male",
+       size = "Total # workers") +
   theme_light()
 ggplotly(p3)
 
